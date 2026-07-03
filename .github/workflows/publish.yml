@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # create the GitHub release and upload the standalone binaries
   packages: write # publish to GitHub Packages with the built-in token
   id-token: write # keyless SLSA provenance via GitHub's OIDC token
   attestations: write # record the build-provenance attestation
@@ -68,3 +68,43 @@ jobs:
         with:
           name: nupkg
           path: ./artifacts/nupkg/*.nupkg
+
+      # Standalone binaries: the npm/PyPI/Cargo/Go audience has no .NET SDK, so every
+      # release ships self-contained single-file builds. Asset names are UNVERSIONED on
+      # purpose — that keeps `releases/latest/download/...` URLs stable.
+      - name: Publish standalone binaries
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p artifacts/dist
+          for RID in linux-x64 linux-arm64 osx-x64 osx-arm64 win-x64; do
+            echo "::group::publish $RID"
+            dotnet publish src/DepRadar.Cli/DepRadar.Cli.csproj -c Release -r "$RID" \
+              -p:StandaloneBinary=true -p:Version="$VERSION" \
+              -o "artifacts/bin/$RID"
+            if [ "$RID" = "win-x64" ]; then
+              (cd "artifacts/bin/$RID" && zip -q "../../dist/depradar-$RID.zip" depradar.exe)
+            else
+              tar -czf "artifacts/dist/depradar-$RID.tar.gz" -C "artifacts/bin/$RID" depradar
+            fi
+            echo "::endgroup::"
+          done
+          (cd artifacts/dist && shasum -a 256 depradar-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Attest binary provenance
+        if: github.ref_type == 'tag'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "./artifacts/dist/depradar-*"
+
+      # The workflow owns the release now: create it if the tag has none, then attach
+      # the binaries. Notes are edited afterwards (gh release edit) without re-upload.
+      - name: Create the release and upload binaries
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+                 --title "DepRadar $GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" artifacts/dist/* --repo "$GITHUB_REPOSITORY" --clobber

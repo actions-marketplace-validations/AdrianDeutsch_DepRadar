@@ -80,7 +80,7 @@ actually matters** and blocks the build when it crosses your policy.
 database):
 
 ```bash
-dotnet tool install --global DepRadar.Tool
+dotnet tool install --global DepRadar.Tool     # with the .NET SDK…
 
 depradar scan WindowsAzure.Storage --fail-on high      # exit 1 fails CI on a policy breach
 depradar npm express                                   # npm too
@@ -88,6 +88,14 @@ depradar pypi requests                                 # …PyPI (Python)
 depradar cargo serde                                   # …Cargo (Rust)
 depradar go golang.org/x/text                          # …and Go
 depradar fix ./MyApp.csproj --open-pr --repo owner/name # auto-fix → opens a pull request
+```
+
+**No .NET SDK?** Every release ships self-contained single-file binaries
+(Linux x64/arm64, macOS x64/arm64, Windows x64 — checksums + provenance attested):
+
+```bash
+curl -fsSL https://github.com/AdrianDeutsch/DepRadar/releases/latest/download/depradar-osx-arm64.tar.gz | tar xz
+./depradar npm ./package.json --fail-on high
 ```
 
 <p align="center">
@@ -482,7 +490,7 @@ DepRadar was built in six vertical slices, then extended well beyond them.
 
 **Next up**
 
-- [ ] Self-contained CLI binaries (no .NET SDK needed — the npm/PyPI/Cargo/Go audience doesn't have one).
+- [x] Self-contained CLI binaries (no .NET SDK needed — the npm/PyPI/Cargo/Go audience doesn't have one) ([ADR 0028]).
 - [ ] Multi-ecosystem dashboard & drift monitoring (the web path is NuGet-only today).
 - [ ] deps.dev license enrichment for Go/Cargo · Maven as ecosystem #6.
 
@@ -521,5 +529,7 @@ Data sources: [NuGet V3 API](https://api.nuget.org/v3/index.json) ·
 [ADR 0024]: docs/adr/0024-multi-ecosystem-cargo.md
 [ADR 0025]: docs/adr/0025-typosquat-warning.md
 [ADR 0026]: docs/adr/0026-multi-ecosystem-go.md
+[ADR 0027]: docs/adr/0027-cli-consistency-and-performance.md
+[ADR 0028]: docs/adr/0028-standalone-binaries.md
 [ADR 0018]: docs/adr/0018-api-edge-hardening.md
 [ADR 0019]: docs/adr/0019-ci-coverage-gate-and-provenance.md

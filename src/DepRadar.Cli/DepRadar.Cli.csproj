@@ -8,8 +8,17 @@
          The CLI runs the stateless analyzer, so it needs no server and no database. -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>depradar</ToolCommandName>
+
+    <!-- `dotnet publish -p:StandaloneBinary=true` produces the SDK-free release binary
+         (self-contained single file named `depradar`). Conditional because a bare
+         `-p:AssemblyName=` on the CLI would apply to every project in the graph. -->
+    <PackAsTool Condition="'$(StandaloneBinary)' == 'true'">false</PackAsTool>
+    <AssemblyName Condition="'$(StandaloneBinary)' == 'true'">depradar</AssemblyName>
+    <PublishSingleFile Condition="'$(StandaloneBinary)' == 'true'">true</PublishSingleFile>
+    <SelfContained Condition="'$(StandaloneBinary)' == 'true'">true</SelfContained>
+    <EnableCompressionInSingleFile Condition="'$(StandaloneBinary)' == 'true'">true</EnableCompressionInSingleFile>
     <PackageId>DepRadar.Tool</PackageId>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Authors>Adrian Deutsch</Authors>
     <Description>Dependency-health CLI: scan a NuGet package or project for security, license and maintenance risk, fail CI on policy violations, and auto-fix vulnerable dependencies (incl. transitive) with a pull request.</Description>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>
