@@ -16,9 +16,14 @@
     <AssemblyName Condition="'$(StandaloneBinary)' == 'true'">depradar</AssemblyName>
     <PublishSingleFile Condition="'$(StandaloneBinary)' == 'true'">true</PublishSingleFile>
     <SelfContained Condition="'$(StandaloneBinary)' == 'true'">true</SelfContained>
-    <EnableCompressionInSingleFile Condition="'$(StandaloneBinary)' == 'true'">true</EnableCompressionInSingleFile>
+    <!-- Compression is deliberately OFF: with EnableCompressionInSingleFile the runtime
+         intermittently dies with an AccessViolationException in System.Text.Json's
+         type-metadata init when the analyzer's 8 concurrent advisory lookups hit the
+         first JSON serialization together (reproduced 5/5 on go/cargo scans; 10/10
+         stable uncompressed). ~86 MB vs ~38 MB is the price of a binary that works. -->
+    <EnableCompressionInSingleFile Condition="'$(StandaloneBinary)' == 'true'">false</EnableCompressionInSingleFile>
     <PackageId>DepRadar.Tool</PackageId>
-    <Version>0.7.1</Version>
+    <Version>0.7.2</Version>
     <Authors>Adrian Deutsch</Authors>
     <Description>Dependency-health CLI: scan a NuGet package or project for security, license and maintenance risk, fail CI on policy violations, and auto-fix vulnerable dependencies (incl. transitive) with a pull request.</Description>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>

@@ -31,8 +31,12 @@ internal static class DiffCommand
             return ExitCodes.Usage;
         }
 
-        await using var provider = CliHost.BuildProvider();
-        await using var scope = provider.CreateAsyncScope();
+        // Deliberately NOT disposed: this is a short-lived process, and disposing the
+        // provider (killing the HttpClients) while HybridCache still has queued
+        // background fetches turns their synchronous ObjectDisposedException into an
+        // unhandled ThreadPool exception — a hard SIGABRT. Process exit cleans up.
+        var provider = CliHost.BuildProvider();
+        var scope = provider.CreateAsyncScope();
         var analyzer = scope.ServiceProvider.GetRequiredService<ProjectAnalyzer>();
 
         var package = PackageId.Create(positional[0]);
