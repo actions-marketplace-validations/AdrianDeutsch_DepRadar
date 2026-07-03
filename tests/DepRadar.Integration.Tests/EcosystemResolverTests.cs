@@ -261,6 +261,37 @@ public sealed class EcosystemResolverTests
         vulnerability.Summary.ShouldContain("CISA KEV");
     }
 
+    [Fact]
+    public async Task Live_graph_query_serves_graph_and_risk_dtos_for_an_ecosystem()
+    {
+        var registry = new RouteHandler(new Dictionary<string, string>
+        {
+            ["/left-pad"] = """{"dist-tags":{"latest":"1.3.0"},"versions":{"1.3.0":{"dependencies":{},"license":"MIT"}}}""",
+        });
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApplication();
+        services.AddInfrastructure();
+        services.AddHttpClient("NpmRegistryClient").ConfigurePrimaryHttpMessageHandler(() => registry);
+        services.AddHttpClient("NpmVulnerabilitySource").ConfigurePrimaryHttpMessageHandler(() => new OsvHandler(vulnerablePackage: "left-pad"));
+        StubExploitFeeds(services);
+
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+        var sender = scope.ServiceProvider.GetRequiredService<DepRadar.Application.Messaging.ISender>();
+
+        var dto = await sender.Send(
+            new DepRadar.Application.Live.GetLiveGraphQuery("npm", "left-pad", null),
+            TestContext.Current.CancellationToken);
+
+        dto.ShouldNotBeNull();
+        dto.Ecosystem.ShouldBe("npm");
+        dto.Graph.Nodes.Single().PackageId.ShouldBe("left-pad");
+        dto.Graph.Nodes.Single().IsRoot.ShouldBeTrue();
+        dto.Risk.Packages.Single().Findings.ShouldContain(f => f.Code == "VULN");
+    }
+
     /// <summary>Keeps exploit-intelligence lookups off the network: empty EPSS + empty KEV catalog.</summary>
     private static void StubExploitFeeds(ServiceCollection services)
     {

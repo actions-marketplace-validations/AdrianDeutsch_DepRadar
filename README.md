@@ -67,10 +67,10 @@ actually matters** and blocks the build when it crosses your policy.
   </tr>
   <tr>
     <td width="50%"><img src="docs/assets/diff.png" alt="Upgrade-impact diff clearing a CVE" /></td>
-    <td width="50%"><img src="docs/assets/dashboard.png" alt="Risk dashboard with dependency graph" /></td>
+    <td width="50%"><img src="docs/assets/dashboard-live.png" alt="Dashboard live mode: an npm dependency graph rendered without persistence" /></td>
   </tr>
 </table>
-<p align="center"><sub>Risk ranking with the vulnerability <b>path</b> + <b>fix</b> · drift since last scan · upgrade-impact diff · a healthy graph</sub></p>
+<p align="center"><sub>Risk ranking with the vulnerability <b>path</b> + <b>fix</b> · drift since last scan · upgrade-impact diff · npm live in the dashboard</sub></p>
 
 ---
 
@@ -146,7 +146,7 @@ docker compose up --build      # then open http://localhost:8080
 - **CLI + policy-as-code** — one `dotnet tool`; a committed `depradar.json` gates **every** ecosystem verb.
 - **GitHub Action** — a shift-left dependency gate that uploads SBOM + SARIF.
 - **CycloneDX 1.5 SBOM** & **SARIF 2.1.0** — standards-based export; findings land in the **Security** tab.
-- **Live dashboard** (SignalR), **Markdown audit report**, and a full **REST API** (`/scalar/v1`).
+- **Live dashboard** (SignalR) with a **live multi-ecosystem mode** — npm/PyPI/Cargo/Go graphs render in-process via `/api/live/{ecosystem}/{package}`, no persistence needed ([ADR 0029]).
 - **Edge hardening** — opt-in `X-API-Key` gate on `/api/*` + per-client rate limiting, both off by default ([ADR 0018]).
 
 #### 🌐 Ecosystems
@@ -531,5 +531,6 @@ Data sources: [NuGet V3 API](https://api.nuget.org/v3/index.json) ·
 [ADR 0026]: docs/adr/0026-multi-ecosystem-go.md
 [ADR 0027]: docs/adr/0027-cli-consistency-and-performance.md
 [ADR 0028]: docs/adr/0028-standalone-binaries.md
+[ADR 0029]: docs/adr/0029-dashboard-live-mode.md
 [ADR 0018]: docs/adr/0018-api-edge-hardening.md
 [ADR 0019]: docs/adr/0019-ci-coverage-gate-and-provenance.md

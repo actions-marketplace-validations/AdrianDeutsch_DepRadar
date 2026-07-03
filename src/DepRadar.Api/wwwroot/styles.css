@@ -209,3 +209,11 @@ tbody tr:hover { background: #16243a; }
 .drift-list li.warn .drift-kind { color: var(--medium); }
 .drift-list li.good .drift-kind { color: var(--none); }
 .drift-pkg { color: var(--text); }
+
+/* Live multi-ecosystem mode: the DB-backed panels (upgrade, diff, drift, chat,
+   SBOM/report downloads) don't apply to an in-process scan. */
+.results.live .db-only { display: none; }
+#ecosystemSelect {
+  background: var(--panel, #151b2b); color: inherit; border: 1px solid var(--border, #2a3350);
+  border-radius: 8px; padding: 10px 12px; font: inherit; margin-right: 8px;
+}

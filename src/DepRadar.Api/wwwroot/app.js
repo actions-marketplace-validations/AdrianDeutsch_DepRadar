@@ -3,6 +3,7 @@
 const els = {
   input: document.getElementById("packageInput"),
   scan: document.getElementById("scanButton"),
+  ecosystem: document.getElementById("ecosystemSelect"),
   status: document.getElementById("status"),
   intro: document.getElementById("intro"),
   results: document.getElementById("results"),
@@ -77,6 +78,18 @@ document.querySelectorAll(".example").forEach((b) =>
 async function startScan() {
   const pkg = els.input.value.trim();
   if (!pkg) return;
+
+  const eco = els.ecosystem ? els.ecosystem.value : "nuget";
+  if (eco !== "nuget") {
+    els.scan.disabled = true;
+    try {
+      await loadLiveResults(eco, pkg);
+    } finally {
+      els.scan.disabled = false;
+    }
+    return;
+  }
+
   els.scan.disabled = true;
   els.intro.classList.add("hidden");
   els.results.classList.add("hidden");
@@ -101,10 +114,60 @@ function setStatus(state, detail, failed) {
   els.status.innerHTML = `<span class="${cls}">${state}</span>${detail ? ` ${detail}` : ""}`;
 }
 
+const placeholders = {
+  nuget: "NuGet package id, e.g. Serilog.Sinks.Console",
+  npm: "npm package, e.g. express — or lodash@4.17.20",
+  pypi: "PyPI package, e.g. requests — or requests@2.19.1",
+  cargo: "crate, e.g. serde — or regex@1.5.4",
+  go: "Go module, e.g. golang.org/x/text — or …@v0.3.7",
+};
+els.ecosystem.addEventListener("change", () => {
+  els.input.placeholder = placeholders[els.ecosystem.value] || placeholders.nuget;
+});
+
+// ---- Live multi-ecosystem mode ----------------------------------------------
+// npm/PyPI/Cargo/Go resolve in-process (no queue, no DB); the DB-backed panels hide.
+
+async function loadLiveResults(eco, raw) {
+  const [pkg, version] = splitVersion(raw);
+  currentPackage = pkg;
+  els.intro.classList.add("hidden");
+  els.results.classList.add("hidden");
+  setStatus("Scanning", `resolving ${pkg} on ${eco} — this runs live and can take a moment…`);
+
+  const path = pkg.split("/").map(encodeURIComponent).join("/");
+  const dto = await getJson(`/api/live/${eco}/${path}${version ? `?version=${encodeURIComponent(version)}` : ""}`);
+  if (!dto) {
+    setStatus("Failed", `'${pkg}' could not be resolved on ${eco}.`, true);
+    return;
+  }
+
+  vulnPaths = {};
+  remediations = {};
+  const levelByPkg = {};
+  dto.risk.packages.forEach((p) => { levelByPkg[p.packageId.toLowerCase()] = p.level; });
+
+  els.overall.textContent = `health ${dto.risk.overallScore}/100 (${dto.risk.overallLevel}) · ${dto.risk.packagesAssessed} packages · live`;
+  renderGraph(dto.graph, levelByPkg);
+  riskRows = dto.risk.packages;
+  renderTable();
+
+  els.results.classList.add("live");
+  els.results.classList.remove("hidden");
+  setStatus("Completed", `${dto.risk.packagesAssessed} packages assessed (live, not persisted)`);
+}
+
+// "name@version" → [name, version]; Go pseudo/npm scoped names keep their inner @.
+function splitVersion(raw) {
+  const at = raw.lastIndexOf("@");
+  return at > 0 ? [raw.slice(0, at), raw.slice(at + 1)] : [raw, null];
+}
+
 // ---- Results ---------------------------------------------------------------
 
 async function loadResults(pkg) {
   currentPackage = pkg;
+  els.results.classList.remove("live");
   els.intro.classList.add("hidden");
   els.chatAnswer.innerHTML = "";
   els.diffResult.innerHTML = "";
@@ -451,6 +514,16 @@ function escapeHtml(value) {
   const pkg = params.get("package");
   if (!pkg) return;
   els.input.value = pkg;
+
+  // ?eco=npm&package=express deep-links straight into the live multi-ecosystem mode.
+  const eco = (params.get("eco") || "nuget").toLowerCase();
+  if (eco !== "nuget") {
+    els.ecosystem.value = eco;
+    els.input.placeholder = placeholders[eco] || placeholders.nuget;
+    loadLiveResults(eco, pkg);
+    return;
+  }
+
   setStatus("Completed", "loading stored report…");
   loadResults(pkg).then(() => {
     // Open a specific package's drill-down (?drill=<id>) or the worst finding by default.

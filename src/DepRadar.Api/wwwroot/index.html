@@ -14,6 +14,13 @@
 
   <main>
     <section class="scanbar">
+      <select id="ecosystemSelect" title="Package ecosystem">
+        <option value="nuget" selected>NuGet</option>
+        <option value="npm">npm</option>
+        <option value="pypi">PyPI</option>
+        <option value="cargo">Cargo</option>
+        <option value="go">Go</option>
+      </select>
       <input id="packageInput" type="text" placeholder="NuGet package id, e.g. Serilog.Sinks.Console" autocomplete="off" />
       <button id="scanButton">Scan</button>
       <div id="status" class="status"></div>
@@ -64,8 +71,8 @@
           <div class="panel-head">
             <h2>Risk ranking</h2>
             <div class="panel-actions">
-              <button id="sbomButton" class="ghost">SBOM</button>
-              <button id="reportButton" class="ghost">Report</button>
+              <button id="sbomButton" class="ghost db-only">SBOM</button>
+              <button id="reportButton" class="ghost db-only">Report</button>
             </div>
           </div>
           <table id="riskTable">
@@ -83,12 +90,12 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div class="panel db-only">
         <div class="panel-head"><h2>Upgrade advisor</h2></div>
         <div id="upgrade" class="upgrade"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel db-only">
         <div class="panel-head"><h2>Upgrade impact</h2></div>
         <div class="diff-input">
           <input id="diffFrom" type="text" placeholder="from version, e.g. 12.0.3" autocomplete="off" />
@@ -99,7 +106,7 @@
         <div id="diffResult" class="diff-result"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel db-only">
         <div class="panel-head">
           <h2>Drift since last scan</h2>
           <div id="driftMeta" class="overall"></div>
@@ -107,7 +114,7 @@
         <div id="driftResult" class="drift-result"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel db-only">
         <div class="panel-head"><h2>Ask the graph</h2></div>
         <div class="chat-input">
           <input id="chatInput" type="text" placeholder="e.g. which packages are deprecated?" autocomplete="off" />

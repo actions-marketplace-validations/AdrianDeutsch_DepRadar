@@ -77,6 +77,7 @@ app.MapPackageEndpoints();
 app.MapScanEndpoints();
 app.MapProjectEndpoints();
 app.MapDriftEndpoints();
+app.MapLiveEndpoints();
 app.MapHub<ScanHub>("/hubs/scan");
 
 await app.RunAsync();
