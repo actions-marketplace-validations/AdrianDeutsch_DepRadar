@@ -131,7 +131,7 @@ docker compose up --build      # then open http://localhost:8080
 #### 🛠️ Remediate
 
 - **Minimal safe upgrade** — the smallest version that clears every advisory.
-- **`depradar fix`** — applies it: patch the manifest in place, or **open a pull request** — for `.csproj`/props, `package.json` **and** `requirements.txt` ([ADR 0021]).
+- **`depradar fix`** — applies it: patch the manifest in place, or **open a pull request** — for `.csproj`/props, `package.json`, `requirements.txt`, `Cargo.toml` **and** `go.mod` ([ADR 0021]).
 - **Transitive parent-bump** — bumps a direct dependency to the smallest version whose *whole graph* is clean.
 
 #### 📡 Monitor

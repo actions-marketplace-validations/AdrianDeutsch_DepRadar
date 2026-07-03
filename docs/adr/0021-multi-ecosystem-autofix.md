@@ -40,3 +40,17 @@ available for every ecosystem, the remediation loop should close for npm and PyP
 
 [ADR 0014]: 0014-remediation-minimal-safe-upgrade.md
 [ADR 0020]: 0020-manifest-scanning-and-ecosystem-cli.md
+
+## Follow-up (2026-07-03): Cargo and Go
+
+`fix` now covers all five ecosystems. `CargoManifestPatcher` rewrites the three
+manifest forms (`name = "1.0"`, inline table, `[dependencies.name]` sub-table),
+preserving a leading `=`/`^`/`~`; `GoModPatcher` rewrites single and block `require`
+lines with the `v` prefix. One semantic split: the fix bar is now explicit
+(`EcosystemFix.WholeGraphClean` vs `RootClean`). Go uses **root-clean** — a declared
+go.mod graph pins historical minimum versions MVS never actually installs, so the
+whole-graph bar is unsatisfiable there (verified: x/text 0.3.8's declared graph still
+carries ancient x/net pseudo-version Criticals); `go get module@vNEW` bumps exactly
+the module itself. npm/PyPI/Cargo keep the stricter parent-bump bar.
+Verified live: Cargo.toml regex `=1.5.4`→`=1.5.5` + smallvec `=1.6.0`→`=1.6.1`;
+go.mod x/text `v0.3.7`→`v0.3.8` + gin `v1.9.0`→`v1.9.1`, patched in place.

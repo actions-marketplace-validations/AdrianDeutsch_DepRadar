@@ -23,7 +23,7 @@
          stable uncompressed). ~86 MB vs ~38 MB is the price of a binary that works. -->
     <EnableCompressionInSingleFile Condition="'$(StandaloneBinary)' == 'true'">false</EnableCompressionInSingleFile>
     <PackageId>DepRadar.Tool</PackageId>
-    <Version>0.7.2</Version>
+    <Version>0.8.0</Version>
     <Authors>Adrian Deutsch</Authors>
     <Description>Dependency-health CLI: scan a NuGet package or project for security, license and maintenance risk, fail CI on policy violations, and auto-fix vulnerable dependencies (incl. transitive) with a pull request.</Description>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/nupkg</PackageOutputPath>

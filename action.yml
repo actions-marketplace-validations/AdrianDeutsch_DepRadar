@@ -46,7 +46,7 @@ inputs:
   tool-version:
     description: 'The DepRadar.Tool version to install.'
     required: false
-    default: '0.7.2'
+    default: '0.8.0'
   tool-source:
     description: 'Extra NuGet source for the tool (e.g. a locally-packed nupkg directory). Defaults to NuGet.org.'
     required: false

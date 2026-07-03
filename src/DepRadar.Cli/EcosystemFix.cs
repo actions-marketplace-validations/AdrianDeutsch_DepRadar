@@ -19,15 +19,29 @@ internal static class EcosystemFix
     /// <summary>Lists a package's published versions.</summary>
     public delegate Task<IReadOnlyList<SemVer>> ListVersionsDelegate(string package, CancellationToken cancellationToken);
 
+    /// <summary>Every node of the assessed graph is advisory-free — the parent-bump bar.</summary>
+    public static bool WholeGraphClean(GraphAssessment graph) =>
+        graph.Nodes.All(node => node.Input.Vulnerabilities.Count == 0);
+
+    /// <summary>
+    /// Only the ROOT node is advisory-free. Go's fix bar: a declared go.mod graph pins
+    /// historical minimum versions MVS never actually installs, so the whole-graph bar
+    /// is unsatisfiable there — `go get module@vNEW` bumps exactly this module.
+    /// </summary>
+    public static bool RootClean(GraphAssessment graph) =>
+        graph.Nodes.First(node => node.Package.Value == graph.Root.Value).Input.Vulnerabilities.Count == 0;
+
     /// <summary>
     /// Resolves the minimal clean bump for each fixable vulnerable dependency
     /// (package name → safe version). Non-fixable findings are written to stderr.
+    /// <paramref name="isClean"/> is the fix bar a candidate must pass.
     /// </summary>
     public static async Task<Dictionary<string, string>> ResolveBumpsAsync(
         IReadOnlyList<ManifestDependency> dependencies,
         Func<ManifestDependency, bool> isPatchable,
         ScanDelegate scan,
         ListVersionsDelegate listVersions,
+        Func<GraphAssessment, bool> isClean,
         CancellationToken cancellationToken)
     {
         var bumps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -35,7 +49,7 @@ internal static class EcosystemFix
         foreach (var dependency in dependencies)
         {
             var graph = await scan(dependency.Name, NullIfBlank(dependency.Specifier), cancellationToken);
-            if (graph is null || graph.Nodes.All(node => node.Input.Vulnerabilities.Count == 0))
+            if (graph is null || isClean(graph))
             {
                 continue;
             }
@@ -51,7 +65,7 @@ internal static class EcosystemFix
             var current = graph.Nodes.First(node => node.Package.Value == graph.Root.Value).Version;
 
             var versions = await listVersions(dependency.Name, cancellationToken);
-            var safe = await FindMinimalCleanAsync(dependency.Name, current, versions, scan, cancellationToken);
+            var safe = await FindMinimalCleanAsync(dependency.Name, current, versions, scan, isClean, cancellationToken);
             if (safe is null)
             {
                 await Console.Error.WriteLineAsync(
@@ -72,12 +86,13 @@ internal static class EcosystemFix
         SemVer current,
         IReadOnlyList<SemVer> versions,
         ScanDelegate scan,
+        Func<GraphAssessment, bool> isClean,
         CancellationToken cancellationToken)
     {
         foreach (var candidate in SafeUpgradeFinder.Candidates(versions.Select(version => version.ToString()), current))
         {
             var graph = await scan(package, candidate.ToString(), cancellationToken);
-            if (graph is not null && graph.Nodes.All(node => node.Input.Vulnerabilities.Count == 0))
+            if (graph is not null && isClean(graph))
             {
                 return candidate.ToString();
             }

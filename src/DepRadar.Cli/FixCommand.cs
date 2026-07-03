@@ -19,7 +19,7 @@ internal static class FixCommand
 {
     /// <summary>The usage banner for <c>fix</c>.</summary>
     public const string Usage =
-        "Usage: depradar fix <.csproj | Directory.Packages.props | package.json | requirements.txt> [--open-pr] [--repo owner/name] [--base main] [--dry-run]";
+        "Usage: depradar fix <.csproj | Directory.Packages.props | package.json | requirements.txt | Cargo.toml | go.mod> [--open-pr] [--repo owner/name] [--base main] [--dry-run]";
 
     /// <summary>Runs <c>fix</c> with the arguments after the verb.</summary>
     public static async Task<int> RunAsync(string[] args, CancellationToken cancellationToken)
@@ -100,6 +100,7 @@ internal static class FixCommand
                 isPatchable: static _ => true, // every registry range can be rewritten in place
                 scanner.ScanAsync,
                 scanner.ListVersionsAsync,
+                EcosystemFix.WholeGraphClean,
                 cancellationToken);
             return NpmManifestPatcher.Apply(content, bumps);
         }
@@ -114,8 +115,37 @@ internal static class FixCommand
                     && !dependency.Specifier.Contains('*'),
                 scanner.ScanAsync,
                 scanner.ListVersionsAsync,
+                EcosystemFix.WholeGraphClean,
                 cancellationToken);
             return RequirementsPatcher.Apply(content, bumps);
+        }
+
+        if (string.Equals(fileName, "Cargo.toml", StringComparison.OrdinalIgnoreCase))
+        {
+            var scanner = services.GetRequiredService<ICargoScanner>();
+            var bumps = await EcosystemFix.ResolveBumpsAsync(
+                CargoManifest.ParseDependencies(content),
+                isPatchable: static _ => true, // every parsed form carries one rewritable requirement
+                scanner.ScanAsync,
+                scanner.ListVersionsAsync,
+                EcosystemFix.WholeGraphClean,
+                cancellationToken);
+            return CargoManifestPatcher.Apply(content, bumps);
+        }
+
+        if (string.Equals(fileName, "go.mod", StringComparison.OrdinalIgnoreCase))
+        {
+            var scanner = services.GetRequiredService<IGoScanner>();
+            var bumps = await EcosystemFix.ResolveBumpsAsync(
+                GoMod.ParseRequires(content),
+                isPatchable: static _ => true, // go.mod requirements are exact by definition
+                scanner.ScanAsync,
+                scanner.ListVersionsAsync,
+                // The declared go.mod graph pins historical minimums MVS never installs,
+                // so the whole-graph bar is unsatisfiable — fix the module itself.
+                EcosystemFix.RootClean,
+                cancellationToken);
+            return GoModPatcher.Apply(content, bumps);
         }
 
         var analyzer = services.GetRequiredService<ProjectAnalyzer>();
