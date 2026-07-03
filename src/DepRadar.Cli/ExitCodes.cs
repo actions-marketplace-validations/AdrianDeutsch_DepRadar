@@ -14,4 +14,11 @@ internal static class ExitCodes
 
     /// <summary>Bad usage, or nothing could be resolved.</summary>
     public const int Usage = 2;
+
+    /// <summary>
+    /// An external service was unreachable (registry/OSV down, network cut) after the
+    /// resilience pipeline gave up. Distinct from <see cref="PolicyViolation"/> so CI
+    /// can retry instead of failing the gate.
+    /// </summary>
+    public const int Unavailable = 3;
 }
