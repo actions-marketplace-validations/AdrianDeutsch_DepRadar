@@ -191,6 +191,7 @@ depradar fix ./MyApp.csproj --dry-run                     # preview the bumps
 depradar fix ./MyApp.csproj                                # patch in place
 depradar fix ./MyApp.csproj --open-pr --repo owner/name    # open a PR (needs GITHUB_TOKEN)
 depradar fix ./package.json --dry-run                      # npm: keeps your ^/~ operator
+depradar fix ./Cargo.toml                                  # Cargo: =/^/~ preserved · go.mod: exact vX.Y.Z
 depradar fix ./requirements.txt                            # PyPI: rewrites == pins
 ```
 
@@ -491,7 +492,8 @@ DepRadar was built in six vertical slices, then extended well beyond them.
 **Next up**
 
 - [x] Self-contained CLI binaries (no .NET SDK needed — the npm/PyPI/Cargo/Go audience doesn't have one) ([ADR 0028]).
-- [ ] Multi-ecosystem dashboard & drift monitoring (the web path is NuGet-only today).
+- [x] Multi-ecosystem dashboard — live mode for npm/PyPI/Cargo/Go ([ADR 0029]).
+- [ ] Multi-ecosystem drift monitoring (the persistence pipeline is NuGet-only today).
 - [ ] deps.dev license enrichment for Go/Cargo · Maven as ecosystem #6.
 
 </details>
